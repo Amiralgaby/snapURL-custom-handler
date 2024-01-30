@@ -9,7 +9,8 @@ IHM_affiche() {
 		 --cancel-label="Ne pas installer" \
 		 --text "$1"
 	else
-		echo "zenity n'existe pas"
+		echo "la commande zenity n'existe pas."
+		echo "Aucun autre moyen implémenté pour avoir une fenêtre de dialogue"
 	fi
 
 }
@@ -26,7 +27,7 @@ progName=$(echo "$1" | sed "s/snap:\/\///g")
 
 # on récupère les informations de snap info pour ce programme
 
-informations=$(LANG=C snap info "$progName" 2>&1)
+informations=$(LANG=C snap info --unicode=always "$progName" 2>&1)
 
 if echo "$informations" | grep -qF "no snap found"; then
 	zenity --warning --no-wrap --title="Aucun snap pour $1" --text="$informations"
@@ -36,11 +37,12 @@ fi
 prog_name=$(get_infos "$informations" 'name')
 summary=$(get_infos "$informations" 'summary')
 publisher=$(get_infos "$informations" 'publisher')
-store_url=$(get_infos "$informations" 'store-url')
-contact_publisher=$(get_infos "$informations" 'contact')
+
+# store_url=$(get_infos "$informations" 'store-url')
+# contact_publisher=$(get_infos "$informations" 'contact')
 license=$(get_infos "$informations" 'license')
 
-line_desc_start=$(snap info vlc | grep -nm1 'description:' | cut -d: -f1)
+line_desc_start=$(echo "$informations" | grep -nm1 'description:' | cut -d: -f1)
 line_desc_start=$((line_desc_start + 1))
 
 info_until_end=$(echo "$informations" | sed -n $line_desc_start',$ p')
@@ -58,10 +60,18 @@ description=$(echo "$info_until_end" | sed -n "1,$line_desc_end p")
 #echo "license : $license"
 #echo "desc : $description"
 
-texte="<b>Application :\t<big>$prog_name</big></b>\n\n<span>Résumé :\t$summary</span>\n\n<span>Éditeur :\t$publisher</span>\n\n<span>Licence :\t$license</span>\n\n<span>Description :</span>\n<span>$description</span>"
+ # vrai si l'éditeur est de confiance selon la sortie de snap info
+spanTickPublisherTrusted=""
+if echo "$publisher" | grep -Fq "✓"; then
+	spanTickPublisherTrusted='<b><span color="green">✓</span></b>'
+	publisher=$(echo "$publisher" | tr -d '✓')
+fi
+
+texte="<b>Application :\t<big>$prog_name</big></b>\n\n<span>Résumé :\t$summary</span>\n\n<span>Éditeur :\t$publisher</span>$spanTickPublisherTrusted\n\n<span>Licence :\t$license</span>\n\n<span>Description :</span>\n<span>$description</span>"
 
 if IHM_affiche "$texte" "$prog_name"; then
-	snap install "$prog_name"
+	# pkexec pour une demande graphique
+	pkexec snap install "$prog_name"
 fi
 
 # sinon ne rien faire
