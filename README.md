@@ -1,6 +1,9 @@
 
 # Snap URL déclencheur customisé
 
+![Aperçu de la fenêtre de dialogue](/snapurl-handle-snap-install.png)
+
+
 lorsque vous avez une URI contenant le scheme "snap", alors cela déclenche un "handler".
 
 ```
