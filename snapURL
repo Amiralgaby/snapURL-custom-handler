@@ -1,12 +1,17 @@
 #!/bin/sh
 
 IHM_affiche() {
-	zenity --question \
-	 --no-wrap \
-	 --title="Snap : installer $2 via son paquet snap ?" \
-	 --ok-label="Installer $2" \
-	 --cancel-label="Ne pas installer" \
-	 --text "$1"
+	if command -v zenity > /dev/null; then
+		zenity --question \
+		 --no-wrap \
+		 --title="Snap : installer $2 via son paquet snap ?" \
+		 --ok-label="Installer $2" \
+		 --cancel-label="Ne pas installer" \
+		 --text "$1"
+	else
+		echo "zenity n'existe pas"
+	fi
+
 }
 
 get_infos() {
@@ -56,9 +61,8 @@ description=$(echo "$info_until_end" | sed -n "1,$line_desc_end p")
 texte="<b>Application :\t<big>$prog_name</big></b>\n\n<span>Résumé :\t$summary</span>\n\n<span>Éditeur :\t$publisher</span>\n\n<span>Licence :\t$license</span>\n\n<span>Description :</span>\n<span>$description</span>"
 
 if IHM_affiche "$texte" "$prog_name"; then
-	echo "ok pour installer"
-else
-	echo "pas ok"
+	snap install "$prog_name"
 fi
 
+# sinon ne rien faire
 
