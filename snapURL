@@ -1,0 +1,64 @@
+#!/bin/sh
+
+IHM_affiche() {
+	zenity --question \
+	 --no-wrap \
+	 --title="Snap : installer $2 via son paquet snap ?" \
+	 --ok-label="Installer $2" \
+	 --cancel-label="Ne pas installer" \
+	 --text "$1"
+}
+
+get_infos() {
+	echo "$1" | grep -m1 "$2:" | cut -d':' -f2- | awk '{$1=$1};1'
+}
+
+# on vérifie qu'il y a un nom de programme en argument
+[ -z "$1" ] && exit 1
+
+# récupérer le programme
+progName=$(echo "$1" | sed "s/snap:\/\///g")
+
+# on récupère les informations de snap info pour ce programme
+
+informations=$(LANG=C snap info "$progName" 2>&1)
+
+if echo "$informations" | grep -qF "no snap found"; then
+	zenity --warning --no-wrap --title="Aucun snap pour $1" --text="$informations"
+	exit 1
+fi
+
+prog_name=$(get_infos "$informations" 'name')
+summary=$(get_infos "$informations" 'summary')
+publisher=$(get_infos "$informations" 'publisher')
+store_url=$(get_infos "$informations" 'store-url')
+contact_publisher=$(get_infos "$informations" 'contact')
+license=$(get_infos "$informations" 'license')
+
+line_desc_start=$(snap info vlc | grep -nm1 'description:' | cut -d: -f1)
+line_desc_start=$((line_desc_start + 1))
+
+info_until_end=$(echo "$informations" | sed -n $line_desc_start',$ p')
+
+line_desc_end=$(echo "$info_until_end" | grep -nm1 '^..*:' | cut -d: -f1)
+line_desc_end=$((line_desc_end - 1))
+
+description=$(echo "$info_until_end" | sed -n "1,$line_desc_end p")
+
+#echo "progname : $prog_name"
+#echo "summary : $summary"
+#echo "publisher : $publisher"
+#echo "store : $store_url"
+#echo "contact : $contact_publisher"
+#echo "license : $license"
+#echo "desc : $description"
+
+texte="<b>Application :\t<big>$prog_name</big></b>\n\n<span>Résumé :\t$summary</span>\n\n<span>Éditeur :\t$publisher</span>\n\n<span>Licence :\t$license</span>\n\n<span>Description :</span>\n<span>$description</span>"
+
+if IHM_affiche "$texte" "$prog_name"; then
+	echo "ok pour installer"
+else
+	echo "pas ok"
+fi
+
+
