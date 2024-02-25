@@ -1,17 +1,33 @@
 #!/bin/sh
 
+IHM_affiche_for_zenity() {
+
+	texte="<b>Application :\t<big>$1</big></b>\n
+<span>Résumé :\t$2</span>\n
+<span>Éditeur :\t$3</span>$4\n
+<span>Licence :\t$5</span>\n
+<span>Description :</span>\n
+<span>$6</span>"
+	
+	"$7" --question \
+	       --no-wrap \
+	       --title="Snap : installer $1 via son paquet snap ?" \
+	       --ok-label="Installer $1" --cancel-label="Ne pas installer" --text "$texte" $8
+}
+
 IHM_affiche() {
-	if command -v zenity > /dev/null; then
-		zenity --question \
-		 --no-wrap \
-		 --title="Snap : installer $2 via son paquet snap ?" \
-		 --ok-label="Installer $2" \
-		 --cancel-label="Ne pas installer" \
-		 --text "$1"
+	if command -v yad > /dev/null; then
+		dialogUI=yad
+		additionalArgs="--center --image=download"
+	elif command -v zenity > /dev/null; then
+		dialogUI=zenity
 	else
 		echo "la commande zenity n'existe pas."
 		echo "Aucun autre moyen implémenté pour avoir une fenêtre de dialogue"
+		exit 1
 	fi
+	
+	IHM_affiche_for_zenity "$1" "$2" "$3" "$4" "$5" "$6" "$dialogUI" "$additionalArgs"
 
 }
 
@@ -67,9 +83,8 @@ if echo "$publisher" | grep -Fq "✓"; then
 	publisher=$(echo "$publisher" | tr -d '✓')
 fi
 
-texte="<b>Application :\t<big>$prog_name</big></b>\n\n<span>Résumé :\t$summary</span>\n\n<span>Éditeur :\t$publisher</span>$spanTickPublisherTrusted\n\n<span>Licence :\t$license</span>\n\n<span>Description :</span>\n<span>$description</span>"
 
-if IHM_affiche "$texte" "$prog_name"; then
+if IHM_affiche "$prog_name" "$summary" "$publisher" "$spanTickPublisherTrusted" "$license" "$description"; then
 	# pkexec pour une demande graphique
 	pkexec snap install "$prog_name"
 fi
