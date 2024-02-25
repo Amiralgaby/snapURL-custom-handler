@@ -58,15 +58,13 @@ publisher=$(get_infos "$informations" 'publisher')
 # contact_publisher=$(get_infos "$informations" 'contact')
 license=$(get_infos "$informations" 'license')
 
-line_desc_start=$(echo "$informations" | grep -nm1 'description:' | cut -d: -f1)
-line_desc_start=$((line_desc_start + 1))
-
-info_until_end=$(echo "$informations" | sed -n $line_desc_start',$ p')
-
-line_desc_end=$(echo "$info_until_end" | grep -nm1 '^..*:' | cut -d: -f1)
-line_desc_end=$((line_desc_end - 1))
-
-description=$(echo "$info_until_end" | sed -n "1,$line_desc_end p")
+# on commence avec p = 0 donc false (on affiche pas)
+# quand on trouve un ligne commençant par description:, on affiche
+# on n'affiche plus si on tombe sur une ligne respectant l'expression "^.+:"
+description=$(echo "$informations" | awk 'BEGIN {p=0};
+     /^description:/ { p = 1 ; next };
+     /^.+:/ { p = 0 ; next};
+     p { print }')
 
 #echo "progname : $prog_name"
 #echo "summary : $summary"
