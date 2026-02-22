@@ -18,7 +18,7 @@ IHM_affiche_for_zenity() {
 IHM_affiche() {
 	if command -v yad > /dev/null; then
 		dialogUI=yad
-		additionalArgs="--center --image=download"
+		additionalArgs="--center --image=download --auto-shrink"
 	elif command -v zenity > /dev/null; then
 		dialogUI=zenity
 	else
@@ -35,8 +35,51 @@ get_infos() {
 	echo "$1" | grep -m1 "$2:" | cut -d':' -f2- | awk '{$1=$1};1'
 }
 
+install_snapUrl_handler() {
+	name="snap-handler.desktop"
+	desktop_file="$HOME/.local/share/applications/$name"
+    mkdir -p "$HOME/.local/share/applications"
+
+	absolute_path=$(readlink -f "$0")
+
+	cat > "$desktop_file" <<EOF
+[Desktop Entry]
+Name=Handler for snap:// URIs
+Exec=$absolute_path %U
+MimeType=x-scheme-handler/snap;
+NoDisplay=true
+Type=Application
+EOF
+
+	chmod +x "$desktop_file"
+    echo "Fichier $desktop_file créé."
+	
+	echo "Déplacement dans /usr/share/applications/"
+	sudo mv "$desktop_file" /usr/share/applications/
+
+	xdg-mime default "$name" x-scheme-handler/snap
+
+	exit 0
+}
+
 # on vérifie qu'il y a un nom de programme en argument
-[ -z "$1" ] && exit 1
+if [ -z "$1" ] ; then
+	desktop_handler=$(xdg-mime query default x-scheme-handler/snap)
+
+	if [ -z "$desktop_handler" ] || [ "$desktop_handler" = "snap-handle-link.desktop" ]; then
+		echo "voulez-vous installer le handler et remplacer snap-handle-link.desktop (Y/n) ?"
+
+		read -r answer_installation
+
+		if [ -z "$answer_installation" ] || [ "$answer_installation" = "y" ] || [ "$answer_installation" = "Y" ]; then
+			install_snapUrl_handler
+		fi
+	fi
+
+	exit 1
+fi
+
+
 
 # récupérer le programme
 progName=$(echo "$1" | sed "s/snap:\/\///g")
